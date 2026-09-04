@@ -6,6 +6,7 @@ import { Question as QuestionModel } from "../models/question.model.js";
 import { Topic as TopicModel } from "../models/topic.model.js";
 import { SubTopic as SubTopicModel } from "../models/subTopic.model.js";
 import type { CodolioResponse } from "../types/codolio.js";
+import redis from "../db/redis.js";
 
 type NestedSubTopic = {
     _id?: string;
@@ -295,8 +296,10 @@ export const deleteQuestion = asyncHandler(async (req: Request, res: Response) =
     if (!id) {
         return res.status(400).json(new ApiResponse(400, null, "Question id is required"));
     }
-
+    
     const deletedQuestion = await QuestionModel.findByIdAndDelete(id);
+
+    await redis.set(`question:${id}`,JSON.stringify(deletedQuestion),'EX' ,10)
 
     if (!deletedQuestion) {
         return res.status(404).json(new ApiResponse(404, null, "Question not found"));
@@ -319,7 +322,31 @@ export const deleteQuestion = asyncHandler(async (req: Request, res: Response) =
 
     return res
         .status(200)
-        .json(new ApiResponse(200, deletedQuestion, "Question deleted successfully"));
+        .json(new ApiResponse(200, {}, "Question deleted successfully"));
+});
+
+export const undoDelete = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json(new ApiResponse(400, null, "Question id is required"));
+    }
+
+    const cached = await redis.get(`question:${id}`);
+
+    if (!cached) {
+        return res.status(410).json(new ApiResponse(410, null, "Undo window has expired"));
+    }
+
+    const questionData = JSON.parse(cached);
+    delete questionData._id;
+
+    const restoredQuestion = await QuestionModel.create(questionData);
+    await redis.del(`question:${id}`);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, restoredQuestion, "Question restored successfully"));
 });
 
 export const editQuestion = asyncHandler(async (req: Request, res: Response) => {

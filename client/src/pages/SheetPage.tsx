@@ -14,6 +14,7 @@ import { ConfirmDialog } from "../components/confirmDialog";
 import type { Topic } from "../api/topic.api";
 import type { SubTopic } from "../api/subTopic.api";
 import type { Question } from "../api/question.api";
+import { UndoToast } from "../components/undoToastComponent";
 
 interface SheetPageProps {
     sheetId: string;
@@ -46,6 +47,9 @@ export function SheetPage({ sheetId, sheetTitle }: SheetPageProps) {
     const updateQuestion = useQuestionStore((s) => s.updateQuestion);
     const removeQuestion = useQuestionStore((s) => s.removeQuestion);
     const fetchQuestions = useQuestionStore((s) => s.fetchQuestions);
+
+    const [undoState, setUndoState] = useState<{ id: string; title: string } | null>(null);
+    const restoreQuestion = useQuestionStore((s) => s.restoreQuestion);     
 
     useEffect(() => {
         fetchTopics(sheetId);
@@ -115,8 +119,11 @@ export function SheetPage({ sheetId, sheetTitle }: SheetPageProps) {
                 setDeleteError(result.error ?? "Could not delete sub-topic");
                 return;
             }
-        } else if (deleteTarget.kind === "question") {
-            await removeQuestion(deleteTarget.item._id);
+        }else if (deleteTarget.kind === "question") {
+            const deletedId = deleteTarget.item._id;
+            const deletedTitle = deleteTarget.item.title;
+            await removeQuestion(deletedId);
+            setUndoState({ id: deletedId, title: deletedTitle });
         }
 
         setDeleteTarget(null);
@@ -236,6 +243,16 @@ export function SheetPage({ sheetId, sheetTitle }: SheetPageProps) {
                     setDeleteError(null);
                 }}
             />
+            {undoState && (
+                <UndoToast
+                    message={`Deleted "${undoState.title}"`}
+                    onUndo={async () => {
+                        const restored = await restoreQuestion(undoState.id);
+                        if (restored) setUndoState(null);
+                    }}
+                    onExpire={() => setUndoState(null)}
+                />
+            )}
         </div>
     );
 }

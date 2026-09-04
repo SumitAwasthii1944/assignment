@@ -7,6 +7,7 @@ import {
 	getQuestions,
 	importCodolioQuestions,
 	reorderQuestion,
+	undoDelete
 } from "../controllers/question.controller.js";
 
 const router = Router()
@@ -18,5 +19,6 @@ router.patch("/reorder", reorderQuestion);
 router.get("/:id", getQuestion);
 router.put("/:id", editQuestion);
 router.delete("/:id", deleteQuestion);
+router.get("/undo/:id",undoDelete)
 
 export default router

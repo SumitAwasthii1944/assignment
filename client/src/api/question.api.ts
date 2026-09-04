@@ -97,11 +97,18 @@ export const editQuestion = async (id: string, payload: EditQuestionPayload): Pr
     return response.data.data;
 };
 
-export const deleteQuestion = async (id: string): Promise<Question> => {
-    const response: AxiosResponse<ApiResponsePayload<Question>> =
+export const deleteQuestion = async (id: string): Promise<{}> => {
+    const response: AxiosResponse<ApiResponsePayload<{}>> =
         await axiosInstance.delete(`${BASE_URL}/${id}`);
     return response.data.data;
 };
+
+export const undoDelete = async (id: string): Promise<Question> => {
+    const response:AxiosResponse<ApiResponsePayload<Question>> =
+        await axiosInstance.get(`${BASE_URL}/undo/${id}`);
+    
+    return response.data.data
+}
 
 export const reorderQuestion = async (payload: ReorderPayload): Promise<ReorderResult> => {
     const response: AxiosResponse<ApiResponsePayload<ReorderResult>> =

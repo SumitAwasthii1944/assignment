@@ -2,15 +2,18 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Question } from "../api/question.api";
 import { DifficultyBadge } from "./DifficultyBadge";
+import { useState } from "react";
 
 interface QuestionRowProps {
     question: Question;
     onToggleSolved: (id: string, isSolved: boolean) => void;
     onEdit: (question: Question) => void;
     onDelete: (question: Question) => void;
+    onUndo: (question: Question) => Promise<Question | null>;
 }
 
-export function QuestionRow({ question, onToggleSolved, onEdit, onDelete }: QuestionRowProps) {
+export function QuestionRow({ question, onToggleSolved, onEdit, onDelete, onUndo }: QuestionRowProps) {
+    const [clickedDelete, setClickedDelete] = useState(false);
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: question._id,
     });
@@ -71,9 +74,28 @@ export function QuestionRow({ question, onToggleSolved, onEdit, onDelete }: Ques
                 <button onClick={() => onEdit(question)} className="rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-200">
                     Edit
                 </button>
-                <button onClick={() => onDelete(question)} className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50">
-                    Delete
-                </button>
+                {clickedDelete ? (
+                    <button
+                        onClick={async () => {
+                            const restored = await onUndo(question);
+                            if (restored) setClickedDelete(false);
+                        }}
+                        className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-slate-100"
+                    >
+                        Undo
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => {
+                            onDelete(question);
+                            setClickedDelete(true);
+                            setTimeout(() => setClickedDelete(false), 10000);
+                        }}
+                        className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
         </div>
     );

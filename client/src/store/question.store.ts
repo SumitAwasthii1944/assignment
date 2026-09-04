@@ -9,6 +9,7 @@ import {
     type AddQuestionPayload,
     type EditQuestionPayload,
     type ReorderPayload,
+    undoDelete,
 } from "../api/question.api";
 import { extractErrorMessage } from "../lib/erros";
 
@@ -21,6 +22,7 @@ interface QuestionState {
     createQuestion: (payload: AddQuestionPayload) => Promise<Question | null>;
     updateQuestion: (id: string, payload: EditQuestionPayload) => Promise<Question | null>;
     removeQuestion: (id: string) => Promise<boolean>;
+    restoreQuestion: (id:string) => Promise<Question | null>
     reorder: (payload: ReorderPayload) => Promise<boolean>;
 }
 
@@ -76,6 +78,17 @@ export const useQuestionStore = create<QuestionState>((set, get) => ({
         } catch (err) {
             set({ error: extractErrorMessage(err) });
             return false;
+        }
+    },
+
+    restoreQuestion: async (id) => {
+        try {
+            const deletedQuestion=await undoDelete(id)
+            set((state) => ({ questions: sortByOrder([...state.questions, deletedQuestion]) }));
+            return deletedQuestion
+        } catch (error) {
+            set({error:extractErrorMessage(error)})
+            return null
         }
     },
 
