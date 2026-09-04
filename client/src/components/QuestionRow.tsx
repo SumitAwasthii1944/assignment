@@ -28,7 +28,7 @@ export function QuestionRow({ question, onToggleSolved, onEdit, onDelete }: Ques
             rel="noreferrer"
             className="rounded bg-red-50 px-1.5 py-1 text-xs text-red-600 hover:bg-red-100"
         >
-            link
+            video
         </a>
     ) : null;
 
@@ -39,7 +39,7 @@ export function QuestionRow({ question, onToggleSolved, onEdit, onDelete }: Ques
             rel="noreferrer"
             className="text-xs text-slate-400 hover:text-slate-600"
         >
-            problem
+            leetcode
         </a>
     );
 
