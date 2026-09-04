@@ -1,22 +1,22 @@
-import mongoose, {Schema,type Model, Types} from "mongoose";
+import mongoose, { Schema, type Model } from "mongoose";
 
-export interface Topics{
-          topicName:string
-          order:string
-          createdAt?: Date;
-          updatedAt?: Date;
+export interface Topics {
+  sheetId: string;
+  name: string;
+  order: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-const TopicSchema=new Schema<Topics>({
-          topicName:{
-                    type:String,
-                    required:true,
-                    trim:true
-          },
-          order:{
-                    type:String,
-                    required:true
-          },
-},{timestamps:true})
+const TopicSchema = new Schema<Topics>(
+  {
+    sheetId: { type: String, required: true, index: true },
+    name: { type: String, required: true, trim: true },
+    order: { type: Number, required: true },
+  },
+  { timestamps: true },
+);
 
-export const Topic: Model<Topics> = mongoose.model<Topics>("Topic",TopicSchema)
+TopicSchema.index({ sheetId: 1, name: 1 }, { unique: true });
+
+export const Topic: Model<Topics> = mongoose.model("Topic", TopicSchema);

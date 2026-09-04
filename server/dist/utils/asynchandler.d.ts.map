@@ -1,0 +1,1 @@
+{"version":3,"file":"asynchandler.d.ts","sourceRoot":"","sources":["../../src/utils/asynchandler.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,cAAc,EAAE,MAAM,SAAS,CAAC;AAE/E,QAAA,MAAM,YAAY,mBAAoB,cAAc,WACrC,OAAO,OAAO,QAAQ,QAAQ,YAAY,SAGxD,CAAC;AAEF,OAAO,EAAE,YAAY,EAAE,CAAC"}
