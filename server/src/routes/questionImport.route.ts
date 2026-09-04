@@ -4,6 +4,7 @@ import {
 	deleteQuestion,
 	editQuestion,
 	getQuestion,
+	getQuestions,
 	importCodolioQuestions,
 	reorderQuestion,
 } from "../controllers/question.controller.js";
@@ -11,6 +12,7 @@ import {
 const router = Router()
 
 router.route("/import").post(importCodolioQuestions);
+router.get("/", getQuestions);
 router.post("/add-question", addQuestion);
 router.patch("/reorder", reorderQuestion);
 router.get("/:id", getQuestion);

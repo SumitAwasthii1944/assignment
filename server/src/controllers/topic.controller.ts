@@ -138,6 +138,8 @@ export const reorderTopic = asyncHandler(async (req: Request, res: Response) => 
         })),
     );
 
-    const updatedTopic = await TopicModel.findById(id);
-    return res.status(200).json(new ApiResponse(200, updatedTopic, "Topic reordered successfully"));
+    return res.status(200).json(
+        new ApiResponse(200, { id, order: targetIndex }, "Topic reordered successfully"),
+    );
 });
+

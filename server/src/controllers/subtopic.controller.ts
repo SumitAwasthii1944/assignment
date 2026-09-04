@@ -13,7 +13,7 @@ const getSheetId = (req: Request) => {
 export const addSubTopic = asyncHandler(async (req: Request, res: Response) => {
     const sheetId = getSheetId(req);
     const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
-    const topic = typeof req.body.topic === "string" ? req.body.topic.trim() : "";
+    const topic = typeof req.params.topic === "string" ? req.params.topic.trim() : "";
 
     if (!sheetId || !name || !topic) {
         return res.status(400).json(new ApiResponse(400, null, "sheetId, topic, and name are required"));
@@ -158,8 +158,7 @@ export const reorderSubTopic = asyncHandler(async (req: Request, res: Response) 
         })),
     );
 
-    const updatedSubTopic = await SubTopicModel.findById(id);
     return res.status(200).json(
-        new ApiResponse(200, updatedSubTopic, "Subtopic reordered successfully"),
+        new ApiResponse(200, { id, order: targetIndex }, "Subtopic reordered successfully"),
     );
 });

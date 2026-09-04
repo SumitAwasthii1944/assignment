@@ -4,7 +4,6 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { Question as QuestionModel } from "../models/question.model.js";
 import { Topic as TopicModel } from "../models/topic.model.js";
 import { SubTopic as SubTopicModel } from "../models/subTopic.model.js";
-
 const buildQuestionHierarchy = (questions, sheet) => {
     const topicOrderMap = new Map(sheet.config.topicOrder.map((topic, index) => [topic, index]));
     const topics = new Map();
@@ -40,7 +39,6 @@ const buildQuestionHierarchy = (questions, sheet) => {
         subTopics: topic.subTopics.sort((first, second) => first.order - second.order),
     }));
 };
-
 export const importCodolioQuestions = asyncHandler(async (_req, res) => {
     const codolioResponse = await fetchCodolioSheet();
     const questions = codolioResponse.data.questions;
@@ -55,7 +53,7 @@ export const importCodolioQuestions = asyncHandler(async (_req, res) => {
                 sheetId: codolioResponse.data.sheet._id,
                 name,
             },
-            update: { $set: { order } },
+            update: { $set: { sheetId: codolioResponse.data.sheet._id, name, order } },
             upsert: true,
         },
     }));
@@ -79,7 +77,7 @@ export const importCodolioQuestions = asyncHandler(async (_req, res) => {
                 topic,
                 name,
             },
-            update: { $set: { order } },
+            update: { $set: { sheetId: codolioResponse.data.sheet._id, topic, name, order } },
             upsert: true,
         },
     })));
@@ -126,15 +124,26 @@ export const importCodolioQuestions = asyncHandler(async (_req, res) => {
     const savedQuestions = await QuestionModel.find({
         sheetId: codolioResponse.data.sheet._id,
     }).sort({ order: 1 });
+    const [savedTopics, savedSubTopics] = await Promise.all([
+        TopicModel.find({ sheetId: codolioResponse.data.sheet._id }).select("_id name").lean(),
+        SubTopicModel.find({ sheetId: codolioResponse.data.sheet._id }).select("_id name topic").lean(),
+    ]);
     const hierarchy = buildQuestionHierarchy(savedQuestions.map((question) => question.toObject()), codolioResponse.data.sheet);
+    const hierarchyWithIds = hierarchy.map((topic) => ({
+        ...topic,
+        _id: savedTopics.find((item) => item.name === topic.name)?._id.toString(),
+        subTopics: topic.subTopics.map((subTopic) => ({
+            ...subTopic,
+            _id: savedSubTopics.find((item) => item.topic === topic.name && item.name === subTopic.name)?._id.toString(),
+        })),
+    }));
     return res
         .status(200)
         .json(new ApiResponse(200, {
         sheet: codolioResponse.data.sheet,
-        topics: hierarchy,
+        topics: hierarchyWithIds,
     }, "Codolio questions imported successfully"));
 });
-
 export const addQuestion = asyncHandler(async (req, res) => {
     const { questionId, sheetId, topic, title, subTopic, resource, session, isPublic, } = req.body;
     if (!questionId?._id || !sheetId || !title || !topic || !session) {
@@ -180,7 +189,6 @@ export const getQuestion = asyncHandler(async (req, res) => {
     }
     return res.status(200).json(new ApiResponse(200, question, "Question fetched successfully"));
 });
-
 export const deleteQuestion = asyncHandler(async (req, res) => {
     const { id } = req.params;
     if (!id) {
@@ -205,8 +213,6 @@ export const deleteQuestion = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, deletedQuestion, "Question deleted successfully"));
 });
-
-
 export const editQuestion = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { topic, title, subTopic, resource, session, isPublic, isSolved, } = req.body;
@@ -252,8 +258,6 @@ export const editQuestion = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, updatedQuestion, "Question updated successfully"));
 });
-
-
 export const reorderQuestion = asyncHandler(async (req, res) => {
     const { id, prevId, nextId } = req.body;
     if (!id) {
@@ -263,7 +267,11 @@ export const reorderQuestion = asyncHandler(async (req, res) => {
     if (!question) {
         return res.status(404).json(new ApiResponse(404, null, "Question not found"));
     }
-    const questions = await QuestionModel.find({ sheetId: question.sheetId }).sort({ order: 1, _id: 1 });
+    const questions = await QuestionModel.find({
+        sheetId: question.sheetId,
+        topic: question.topic,
+        subTopic: question.subTopic,
+    }).sort({ order: 1, _id: 1 });
     const remainingQuestions = questions.filter((item) => item._id.toString() !== id);
     const targetIndex = nextId
         ? remainingQuestions.findIndex((item) => item._id.toString() === nextId)
@@ -280,6 +288,6 @@ export const reorderQuestion = asyncHandler(async (req, res) => {
             update: { $set: { order } },
         },
     })));
-    const updatedQuestion = await QuestionModel.findById(id);
-    return res.status(200).json(new ApiResponse(200, updatedQuestion, "Question reordered successfully"));
+    return res.status(200).json(new ApiResponse(200, { id, order: targetIndex }, "Question reordered successfully"));
 });
+//# sourceMappingURL=question.controller.js.map

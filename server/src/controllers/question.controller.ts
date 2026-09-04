@@ -8,6 +8,7 @@ import { SubTopic as SubTopicModel } from "../models/subTopic.model.js";
 import type { CodolioResponse } from "../types/codolio.js";
 
 type NestedSubTopic = {
+    _id?: string;
     sheetId: string;
     name: string;
     order: number;
@@ -15,6 +16,7 @@ type NestedSubTopic = {
 };
 
 type NestedTopic = {
+    _id?: string;
     sheetId: string;
     name: string;
     order: number;
@@ -91,7 +93,7 @@ export const importCodolioQuestions = asyncHandler(
                     sheetId: codolioResponse.data.sheet._id,
                     name,
                 },
-                update: { $set: { order } },
+                update: { $set: { sheetId: codolioResponse.data.sheet._id, name, order } },
                 upsert: true,
             },
         }));
@@ -120,7 +122,7 @@ export const importCodolioQuestions = asyncHandler(
                             topic,
                             name,
                         },
-                        update: { $set: { order } },
+                        update: { $set: { sheetId: codolioResponse.data.sheet._id, topic, name, order } },
                         upsert: true,
                     },
                 })),
@@ -176,6 +178,10 @@ export const importCodolioQuestions = asyncHandler(
             sheetId: codolioResponse.data.sheet._id,
         }).sort({ order: 1 });
 
+        const [savedTopics, savedSubTopics] = await Promise.all([
+            TopicModel.find({ sheetId: codolioResponse.data.sheet._id }).select("_id name").lean(),
+            SubTopicModel.find({ sheetId: codolioResponse.data.sheet._id }).select("_id name topic").lean(),
+        ]);
         const hierarchy = buildQuestionHierarchy(
             savedQuestions.map(
                 (question) =>
@@ -183,6 +189,14 @@ export const importCodolioQuestions = asyncHandler(
             ),
             codolioResponse.data.sheet,
         );
+        const hierarchyWithIds = hierarchy.map((topic) => ({
+            ...topic,
+            _id: savedTopics.find((item) => item.name === topic.name)?._id.toString(),
+            subTopics: topic.subTopics.map((subTopic) => ({
+                ...subTopic,
+                _id: savedSubTopics.find((item) => item.topic === topic.name && item.name === subTopic.name)?._id.toString(),
+            })),
+        }));
 
         return res
             .status(200)
@@ -191,13 +205,24 @@ export const importCodolioQuestions = asyncHandler(
                     200,
                     {
                         sheet: codolioResponse.data.sheet,
-                        topics: hierarchy,
+                        topics: hierarchyWithIds,
                     },
                     "Codolio questions imported successfully",
                 ),
             );
     },
 );
+
+export const getQuestions = asyncHandler(async (req: Request, res: Response) => {
+    const sheetId = typeof req.query.sheetId === "string" ? req.query.sheetId.trim() : "";
+
+    if (!sheetId) {
+        return res.status(400).json(new ApiResponse(400, null, "sheetId is required"));
+    }
+
+    const questions = await QuestionModel.find({ sheetId }).sort({ order: 1 });
+    return res.status(200).json(new ApiResponse(200, questions, "Questions fetched successfully"));
+});
 
 export const addQuestion = asyncHandler(async (req: Request, res: Response) => {
     const {
@@ -380,7 +405,11 @@ export const reorderQuestion = asyncHandler(async (req: Request, res: Response) 
         return res.status(404).json(new ApiResponse(404, null, "Question not found"));
     }
 
-    const questions = await QuestionModel.find({ sheetId: question.sheetId }).sort({ order: 1, _id: 1 });
+    const questions = await QuestionModel.find({
+        sheetId: question.sheetId,
+        topic: question.topic,
+        subTopic: question.subTopic,
+    }).sort({ order: 1, _id: 1 });
     const remainingQuestions = questions.filter(
         (item) => item._id.toString() !== id,
     );
@@ -404,8 +433,7 @@ export const reorderQuestion = asyncHandler(async (req: Request, res: Response) 
         })),
     );
 
-    const updatedQuestion = await QuestionModel.findById(id);
     return res.status(200).json(
-        new ApiResponse(200, updatedQuestion, "Question reordered successfully"),
+        new ApiResponse(200, { id, order: targetIndex }, "Question reordered successfully"),
     );
 });

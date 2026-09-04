@@ -113,7 +113,6 @@ export const reorderSubTopic = asyncHandler(async (req, res) => {
             update: { $set: { order } },
         },
     })));
-    const updatedSubTopic = await SubTopicModel.findById(id);
-    return res.status(200).json(new ApiResponse(200, updatedSubTopic, "Subtopic reordered successfully"));
+    return res.status(200).json(new ApiResponse(200, { id, order: targetIndex }, "Subtopic reordered successfully"));
 });
 //# sourceMappingURL=subtopic.controller.js.map
