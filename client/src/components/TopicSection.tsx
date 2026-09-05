@@ -23,6 +23,7 @@ interface TopicSectionProps {
     onAddQuestion: (topic: string, subTopic: string | null) => void;
     onEditQuestion: (question: Question) => void;
     onDeleteQuestion: (question: Question) => void;
+    onUndo: (question: Question) => Promise<Question | null>;
 }
 
 export function TopicSection({
@@ -37,6 +38,7 @@ export function TopicSection({
     onAddQuestion,
     onEditQuestion,
     onDeleteQuestion,
+    onUndo
 }: TopicSectionProps) {
     const [expanded, setExpanded] = useState(true);
     const reorderQuestion = useQuestionStore((s) => s.reorder);
@@ -91,6 +93,7 @@ export function TopicSection({
                                             onToggleSolved={(id, isSolved) => updateQuestion(id, { isSolved })}
                                             onEdit={onEditQuestion}
                                             onDelete={onDeleteQuestion}
+                                            onUndo={onUndo}
                                         />
                                     ))}
                                 </div>
@@ -109,6 +112,7 @@ export function TopicSection({
                                     onAddQuestion={onAddQuestion}
                                     onEditQuestion={onEditQuestion}
                                     onDeleteQuestion={onDeleteQuestion}
+                                    onUndo={onUndo}
                                 />
                             ))}
                         </SortableContext>

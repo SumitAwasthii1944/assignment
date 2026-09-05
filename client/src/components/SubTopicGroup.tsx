@@ -17,6 +17,7 @@ interface SubTopicGroupProps {
     onAddQuestion: (topic: string, subTopic: string) => void;
     onEditQuestion: (question: Question) => void;
     onDeleteQuestion: (question: Question) => void;
+    onUndo: (question: Question) => Promise<Question | null>;
 }
 
 export function SubTopicGroup({
@@ -27,6 +28,7 @@ export function SubTopicGroup({
     onAddQuestion,
     onEditQuestion,
     onDeleteQuestion,
+    onUndo
 }: SubTopicGroupProps) {
     const [expanded, setExpanded] = useState(true);
     const reorderQuestion = useQuestionStore((s) => s.reorder);
@@ -71,6 +73,7 @@ export function SubTopicGroup({
                                     onToggleSolved={(id, isSolved) => updateQuestion(id, { isSolved })}
                                     onEdit={onEditQuestion}
                                     onDelete={onDeleteQuestion}
+                                    onUndo={onUndo}
                                 />
                             ))}
                         </div>
