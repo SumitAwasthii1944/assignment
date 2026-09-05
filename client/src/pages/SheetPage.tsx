@@ -158,6 +158,7 @@ export function SheetPage({ sheetId, sheetTitle }: SheetPageProps) {
                                 setQuestionModal({ open: true, topic: q.topic, subTopic: q.subTopic, editing: q })
                             }
                             onDeleteQuestion={(q) => setDeleteTarget({ kind: "question", item: q })}
+                            onUndo={(q) => restoreQuestion(q._id)}
                         />
                     ))}
                 </SortableContext>
